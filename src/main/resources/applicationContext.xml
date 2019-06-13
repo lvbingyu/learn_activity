@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xmlns:aop="http://www.springframework.org/schema/aop" 
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/tx 
+        http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+        http://www.springframework.org/schema/aop 
+        http://www.springframework.org/schema/aop/spring-aop-4.0.xsd">
+
+	<!-- 加载外部属性配置文件 -->
+	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer" id="propertyPlaceholderConfigurer">
+		<property value="classpath:/db/jdbc.properties" name="locations"/>
+	</bean>
+	
+	<!-- 配置C3P0数据源 -->
+	<bean class="com.mchange.v2.c3p0.ComboPooledDataSource" id="dataSource">
+		<property value="${jdbc.driver}" name="driverClass"/>
+		<property value="${jdbc.url}" name="jdbcUrl"/>
+		<property value="${jdbc.user}" name="user"/>
+		<property value="${jdbc.password}" name="password"/>
+		<property value="5" name="initialPoolSize"/>
+	</bean>
+	<!-- 事务管理器 -->
+	<bean class="org.springframework.jdbc.datasource.DataSourceTransactionManager" id="transactionManager">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+	<tx:advice id="transactionAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="*" rollback-for="java.lang.Exception" isolation="DEFAULT" propagation="REQUIRED"/>
+			<tx:method name="query*" read-only="true"/>
+			<tx:method name="get*" read-only="true"/>
+		</tx:attributes>
+	</tx:advice>
+	
+	<!-- activity引擎配置 -->
+	<bean id="processEngineConfiguration" class="org.activiti.spring.SpringProcessEngineConfiguration">
+    	<property name="dataSource" ref="dataSource" />
+    	<property name="transactionManager" ref="transactionManager" />
+    	<property name="databaseSchemaUpdate" value="true" />
+    	<property name="jobExecutorActivate" value="true" />
+    	<property name="labelFontName" value="宋体" />
+    	<property name="activityFontName" value="宋体" />
+        <property name="customFormTypes">
+          <list>
+            <bean class="org.activiti.explorer.form.UserFormType"/>
+            <bean class="org.activiti.explorer.form.ProcessDefinitionFormType"/> 
+            <bean class="org.activiti.explorer.form.MonthFormType"/>   
+          </list>
+        </property>
+    </bean>
+  
+	<!-- activity引擎 -->
+    <bean id="processEngine" class="org.activiti.spring.ProcessEngineFactoryBean" destroy-method="destroy">
+  	    <property name="processEngineConfiguration" ref="processEngineConfiguration" />
+    </bean>
+	
+</beans>
